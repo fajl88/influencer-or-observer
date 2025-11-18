@@ -48,8 +48,8 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - README.md: 250+ lignes avec structure, méthodologie, utilisation
 - QUICKSTART.md: Guide de démarrage en 5 minutes
 - PROJECT_STRUCTURE.md: Description détaillée de chaque composant
-- STRUCTURE.md: Vue d'ensemble avec checklist qualité
 - CONTRIBUTING.md: Guide de contribution complet
+- CHANGELOG.md: Historique des changements
 - README dans chaque sous-dossier
 
 ### ✅ Tests

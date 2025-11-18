@@ -110,10 +110,11 @@ models/*.h5
 logs/
 reports/*.log
 
-# Data files - Garder les fichiers sources mais ignorer les temporaires
+# Data files - Ignorer les fichiers volumineux (> 100 MB)
 data/*.csv
-!data/train.jsonl
-!data/kaggle_test.jsonl
+data/*.jsonl
+# Note: Les fichiers data/ sont trop volumineux pour GitHub
+# Télécharger depuis Kaggle: https://www.kaggle.com/c/influencer-or-observer/data
 
 # Submissions temporaires
 submissions/temp_*.csv
