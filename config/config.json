@@ -1,0 +1,75 @@
+{
+  "paths": {
+    "data_dir": "data",
+    "train_file": "data/train.jsonl",
+    "test_file": "data/kaggle_test.jsonl",
+    "models_dir": "models",
+    "submissions_dir": "submissions",
+    "reports_dir": "reports"
+  },
+  "preprocessing": {
+    "remove_urls": true,
+    "remove_mentions": true,
+    "remove_hashtags": false,
+    "lowercase": true,
+    "remove_punctuation": false,
+    "min_text_length": 5
+  },
+  "tfidf": {
+    "max_features": 1000,
+    "max_df": 0.7,
+    "min_df": 3,
+    "ngram_range": [1, 2],
+    "use_stopwords": true,
+    "stopwords_language": "french"
+  },
+  "logistic_regression": {
+    "solver": "liblinear",
+    "max_iter": 1000,
+    "C": 1.0,
+    "random_state": 42,
+    "class_weight": null
+  },
+  "random_forest": {
+    "n_estimators": 100,
+    "max_depth": null,
+    "min_samples_split": 2,
+    "min_samples_leaf": 1,
+    "random_state": 42,
+    "n_jobs": -1
+  },
+  "validation": {
+    "cv_folds": 5,
+    "stratified": true,
+    "shuffle": true,
+    "random_state": 42,
+    "test_size": 0.2
+  },
+  "evaluation": {
+    "metrics": ["accuracy", "precision", "recall", "f1"],
+    "print_classification_report": true,
+    "save_confusion_matrix": true
+  },
+  "training": {
+    "verbose": 1,
+    "save_model": true,
+    "model_format": "pickle"
+  },
+  "features": {
+    "text_features": ["full_text"],
+    "user_features": ["user.statuses_count", "user.location", "source"],
+    "custom_features": [
+      "text_length",
+      "hashtag_count",
+      "mention_count",
+      "url_count",
+      "emoji_count"
+    ]
+  },
+  "random_state": 42,
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    "file": "reports/training.log"
+  }
+}

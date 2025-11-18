@@ -1,0 +1,28 @@
+# Répertoire pour stocker les modèles entraînés
+
+Ce dossier contient les modèles entraînés sauvegardés (format `.joblib` ou `.pkl`).
+
+## Convention de nommage
+
+Format recommandé: `{model_name}_{date}_{score}.joblib`
+
+Exemples:
+- `logistic_regression_20231118_0.85.joblib`
+- `random_forest_20231118_0.87.joblib`
+- `camembert_finetuned_20231118_0.92.joblib`
+
+## Fichiers
+
+Les modèles seront sauvegardés automatiquement ici lors de l'entraînement.
+
+## Usage
+
+```python
+from src.models import load_model
+
+# Charger un modèle
+model = load_model('models/logistic_regression_20231118_0.85.joblib')
+
+# Faire des prédictions
+predictions = model.predict(X_test)
+```

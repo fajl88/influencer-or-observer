@@ -1,1 +1,146 @@
-data/*
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Machine Learning specific
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.joblib
+models/*.joblib
+models/*.pkl
+models/*.h5
+
+# Logs
+*.log
+logs/
+reports/*.log
+
+# Data files - Garder les fichiers sources mais ignorer les temporaires
+data/*.csv
+!data/train.jsonl
+!data/kaggle_test.jsonl
+
+# Submissions temporaires
+submissions/temp_*.csv
+
+# Figures temporaires
+reports/figures/temp_*.png
+reports/figures/temp_*.jpg
+
+# Mac
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+
+# Kaggle specific
+kaggle.json
+
+# Temporary files
+*.tmp
+*.temp
+
