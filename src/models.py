@@ -250,6 +250,40 @@ class RandomForestModel:
     def score(self, X: pd.Series, y: pd.Series) -> float:
         """Calcule le score"""
         return self.pipeline.score(X, y)
+    
+    def cross_validate(self, 
+                      X: pd.Series, 
+                      y: pd.Series, 
+                      cv: int = 5,
+                      scoring: str = 'accuracy') -> Dict[str, Any]:
+        """
+        Effectue une validation croisée
+        
+        Args:
+            X: Features
+            y: Target
+            cv: Nombre de folds
+            scoring: Métrique à utiliser
+            
+        Returns:
+            Dictionnaire avec les résultats
+        """
+        logger.info(f"Validation croisée {cv}-fold en cours...")
+        
+        kfold = StratifiedKFold(n_splits=cv, shuffle=True, random_state=self.random_state)
+        scores = cross_val_score(self.pipeline, X, y, cv=kfold, scoring=scoring)
+        
+        results = {
+            'scores': scores,
+            'mean_score': np.mean(scores),
+            'std_score': np.std(scores),
+            'min_score': np.min(scores),
+            'max_score': np.max(scores)
+        }
+        
+        logger.info(f"Score moyen: {results['mean_score']:.4f} (+/- {results['std_score']:.4f})")
+        
+        return results
 
 
 def save_model(model: Any, filepath: str) -> None:
