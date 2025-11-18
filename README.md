@@ -1,3 +1,1 @@
 # influencer-or-observer
-
-jhgvuyj
