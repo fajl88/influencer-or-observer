@@ -1,178 +1,165 @@
-# Guide de Démarrage Rapide
+# 🚀 Quick Start Guide - Version Optimisée
 
-Ce guide vous aide à démarrer rapidement avec le projet Influencer-or-Observer.
+Commencez rapidement avec les modèles avancés et générez vos soumissions Kaggle !
 
-## 🚀 Installation Rapide
+## ⚡ Démarrage Ultra-Rapide (5 min)
+
+### 1. Installation
 
 ```bash
-# 1. Cloner le repository (si applicable)
-git clone <url>
+# Cloner le repo (si pas déjà fait)
+git clone <repo_url>
 cd influencer-or-observer
 
-# 2. Créer un environnement virtuel
+# Créer environnement virtuel
 python -m venv venv
-source venv/bin/activate  # Sur macOS/Linux
-# venv\Scripts\activate   # Sur Windows
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# 3. Installer les dépendances
-pip install -r requirements.txt
-
-# 4. Télécharger les stopwords NLTK
-python -c "import nltk; nltk.download('stopwords')"
-```
-
-## 📂 Structure du Projet
-
-```
-influencer-or-observer/
-├── data/                  # Données (train.jsonl, kaggle_test.jsonl)
-├── notebooks/             # Notebooks Jupyter
-├── src/                   # Code source Python
-├── models/                # Modèles sauvegardés
-├── submissions/           # Soumissions Kaggle
-├── reports/               # Rapports et figures
-└── config/                # Configuration
-```
-
-## 🎯 Premier Pas
-
-### Option 1: Notebooks Jupyter (Recommandé pour débuter)
-
-```bash
-# Lancer Jupyter
-jupyter notebook
-
-# Ouvrir dans l'ordre:
-# 1. notebooks/01_EDA.ipynb          - Explorer les données
-# 2. notebooks/02_baseline.ipynb     - Tester les modèles de base
-# 3. notebooks/03_feature_engineering.ipynb  - Créer des features
-# 4. notebooks/04_advanced_models.ipynb      - Modèles avancés
-```
-
-### Option 2: Script Python
-
-```python
-# example_usage.py
-from src.data_loader import load_training_data, load_test_data, save_submission
-from src.preprocessing import preprocess_dataframe
-from src.models import LogisticRegressionModel
-
-# 1. Charger les données
-X_train, y_train = load_training_data('data/train.jsonl')
-X_test = load_test_data('data/kaggle_test.jsonl')
-
-# 2. Prétraiter
-X_train = preprocess_dataframe(X_train)
-X_test = preprocess_dataframe(X_test)
-
-# 3. Entraîner un modèle
-model = LogisticRegressionModel()
-cv_results = model.cross_validate(X_train['full_text'], y_train)
-print(f"Accuracy: {cv_results['mean_score']:.4f}")
-
-model.fit(X_train['full_text'], y_train)
-
-# 4. Prédire et soumettre
-predictions = model.predict(X_test['full_text'])
-save_submission(predictions, X_test['challenge_id'], 
-                'submissions/my_submission.csv')
-```
-
-## 📊 Workflow Recommandé
-
-### 1. Exploration (EDA)
-- Ouvrir `notebooks/01_EDA.ipynb`
-- Comprendre la distribution des données
-- Identifier des patterns
-
-### 2. Baseline
-- Ouvrir `notebooks/02_baseline.ipynb`
-- Établir un score de référence
-- Tester Dummy Classifier et Logistic Regression
-
-### 3. Amélioration
-- Feature engineering dans `notebooks/03_feature_engineering.ipynb`
-- Tester différentes features
-- Analyser l'importance des features
-
-### 4. Modèles Avancés
-- Ouvrir `notebooks/04_advanced_models.ipynb`
-- Tester Random Forest, XGBoost, Neural Networks
-- Hyperparameter tuning
-- Ensemble methods
-
-### 5. Soumission
-```python
-# Dans votre notebook ou script
-from src.data_loader import save_submission
-
-save_submission(
-    predictions=y_pred,
-    challenge_ids=X_test['challenge_id'],
-    output_path='submissions/my_submission.csv'
-)
-```
-
-## 🔧 Configuration
-
-Modifier `config/config.yaml` pour ajuster:
-- Hyperparamètres des modèles
-- Paramètres de preprocessing
-- Chemins des fichiers
-
-## 📝 Checklist Avant Soumission
-
-- [ ] Les données sont bien chargées (train.jsonl, kaggle_test.jsonl)
-- [ ] Le preprocessing est appliqué de façon identique sur train et test
-- [ ] Le modèle est entraîné sur toutes les données d'entraînement
-- [ ] Les prédictions sont au format correct (ID, Prediction)
-- [ ] Le fichier de soumission a le bon format CSV
-
-## 🆘 Problèmes Courants
-
-### Erreur: "Module not found"
-```bash
-# Vérifier que l'environnement virtuel est activé
-which python  # Doit pointer vers venv/bin/python
-
-# Réinstaller les dépendances
+# Installer dépendances
 pip install -r requirements.txt
 ```
 
-### Erreur: "NLTK stopwords not found"
+### 2. Ouvrir le Notebook Principal
+
 ```bash
-python -c "import nltk; nltk.download('stopwords')"
+jupyter notebook notebooks/04_advanced_models.ipynb
 ```
 
-### Erreur: "File not found"
-```bash
-# Vérifier que vous êtes dans le bon répertoire
-pwd  # Doit afficher: .../influencer-or-observer
+### 3. Exécuter
 
-# Vérifier que les fichiers de données existent
-ls data/
+**Dans Jupyter** : Menu `Cell` > `Run All`
+
+⏱️ **Temps estimé** : 15-30 min (Mac M4)
+
+### 4. Récupérer les Soumissions
+
+Les fichiers sont générés automatiquement dans `submissions/` :
+
+- ⭐ `ensemble_mean_submission.csv` (Recommandé #1)
+- ⭐ `ensemble_vote_submission.csv` (Recommandé #2)
+- Et 4+ autres modèles à tester
+
+### 5. Soumettre sur Kaggle
+
+1. Aller sur la page du challenge Kaggle
+2. Upload `ensemble_mean_submission.csv`
+3. Vérifier le score
+4. Tester d'autres soumissions
+
+## 📊 Deux Modes d'Exécution
+
+### Mode Test (Rapide) - Par Défaut
+
+```python
+# Dans la cellule CamemBERT
+USE_SAMPLE = True    # ✅ Activé par défaut
+SAMPLE_SIZE = 0.15   # 15% des données
 ```
 
-## 📚 Ressources
+- ⏱️ **Temps** : ~10 min total
+- ✅ **But** : Valider le pipeline
+- 📊 **Soumissions** : Modèles classiques seulement
 
-- **README.md**: Documentation complète
-- **config/config.yaml**: Configuration des hyperparamètres
-- **src/**: Code source avec docstrings
-- **reports/performance.md**: Résultats des modèles
+### Mode Production (Complet)
 
-## 💡 Tips
+```python
+# Dans la cellule CamemBERT
+USE_SAMPLE = False   # 🔥 Pour soumission finale
+```
 
-1. **Toujours valider avec cross-validation** avant de soumettre
-2. **Sauvegarder les modèles** qui performent bien
-3. **Documenter les expériences** dans les notebooks
-4. **Versionner les soumissions** avec un nom descriptif
-5. **Analyser les erreurs** pour comprendre où le modèle échoue
+- ⏱️ **Temps** : ~30-40 min total
+- ✅ **But** : Meilleurs résultats
+- 📊 **Soumissions** : Tous les modèles incluant CamemBERT
 
-## 🎓 Pour Aller Plus Loin
+## 🎯 Stratégie Recommandée
 
-- Tester CamemBERT (modèle de langage français)
-- Créer des features textuelles avancées
-- Faire de l'ensemble de modèles
-- Analyser les tweets mal classés
+### Jour 1 : Test Rapide
+1. Exécuter en mode échantillon (`USE_SAMPLE = True`)
+2. Soumettre `ensemble_mean_submission.csv`
+3. Noter le score Kaggle
 
-Bonne chance avec le challenge ! 🚀
+### Jour 2 : Production
+1. Modifier : `USE_SAMPLE = False`
+2. Relancer le notebook (30-40 min)
+3. Soumettre toutes les versions :
+   - `ensemble_mean_submission.csv`
+   - `ensemble_vote_submission.csv`
+   - `camembert_submission.csv`
+   - Meilleur modèle classique individuel
+
+### Jour 3 : Optimisation
+1. Analyser quel modèle performe le mieux
+2. Ajuster hyperparamètres si nécessaire
+3. Tester variations
+
+## 📖 Documentation Complète
+
+Pour tout savoir sur les modèles et optimisations :
+
+**➡️ [`notebooks/ADVANCED_MODELS_GUIDE.md`](notebooks/ADVANCED_MODELS_GUIDE.md)**
+
+## 🐍 Alternative : Script Python
+
+Si vous préférez la ligne de commande :
+
+```bash
+# Générer toutes les soumissions
+python generate_submissions.py --models all
+
+# Uniquement les ensembles
+python generate_submissions.py --models ensemble
+```
+
+> ⚠️ **Note** : Les modèles doivent d'abord être entraînés via le notebook
+
+## 🆘 Problèmes Fréquents
+
+### "Erreur mémoire" avec CamemBERT
+
+```python
+# Réduire le batch size dans la cellule CamemBERT
+train_batch_size = 8   # Au lieu de 32
+eval_batch_size = 16   # Au lieu de 64
+```
+
+### "Package manquant"
+
+```bash
+pip install <package_name>
+```
+
+### "Notebook trop lent"
+
+1. Utiliser `USE_SAMPLE = True`
+2. Réduire `SAMPLE_SIZE` à 0.10 (10%)
+3. Fermer autres applications
+
+## ✅ Checklist de Soumission
+
+- [ ] Notebook exécuté sans erreurs
+- [ ] Fichiers CSV générés dans `submissions/`
+- [ ] Vérification du format (ID, Prediction)
+- [ ] Upload sur Kaggle
+- [ ] Score reçu
+
+## 🏆 Tips pour Gagner
+
+1. **Soumettez les ensembles en premier** - Plus robustes
+2. **Testez plusieurs versions** - 5 soumissions/jour autorisées
+3. **Notez les scores** - Pour comparer les approches
+4. **Si temps limité** - Mode échantillon suffit pour bon score
+
+## 💡 Prochaines Étapes
+
+Après avoir soumis vos premiers résultats :
+
+1. Analyser les prédictions incorrectes
+2. Tester d'autres hyperparamètres
+3. Essayer data augmentation
+4. Lire le guide complet pour optimisations avancées
+
+---
+
+**Bonne chance ! 🚀**
+
+Questions ? Consultez [`notebooks/ADVANCED_MODELS_GUIDE.md`](notebooks/ADVANCED_MODELS_GUIDE.md)

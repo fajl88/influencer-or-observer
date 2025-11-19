@@ -47,7 +47,9 @@ influencer-or-observer/
 │   ├── 01_EDA.ipynb              # Analyse exploratoire des données
 │   ├── 02_baseline.ipynb         # Modèles de baseline
 │   ├── 03_feature_engineering.ipynb  # Création de features
-│   └── 04_advanced_models.ipynb  # Modèles avancés
+│   ├── 04_advanced_models.ipynb  # 🚀 Modèles avancés (PRINCIPAL)
+│   ├── ADVANCED_MODELS_GUIDE.md  # 📖 Guide complet des modèles
+│   └── README.md
 │
 ├── src/                          # Code source Python modulaire
 │   ├── __init__.py
@@ -69,10 +71,17 @@ influencer-or-observer/
 │   ├── figures/                  # Graphiques générés
 │   └── performance.md            # Résumé des performances
 │
+├── docs/                         # 📚 Documentation détaillée
+│   ├── README.md                 # Index de la documentation
+│   ├── IMPROVEMENTS_SUMMARY.md   # Résumé des améliorations
+│   └── PIPELINE_VISUAL.md        # Visualisation du pipeline
+│
 ├── config/                       # Fichiers de configuration
 │   └── config.yaml               # Hyperparamètres et configurations
 │
 ├── requirements.txt              # Dépendances Python
+├── QUICKSTART.md                 # ⚡ Guide de démarrage rapide
+├── generate_submissions.py       # Script pour générer les soumissions
 ├── .gitignore                    # Fichiers à ignorer
 └── README.md                     # Ce fichier
 ```
@@ -110,20 +119,34 @@ python -c "import nltk; nltk.download('stopwords')"
 - Nettoyage du texte (URLs, mentions, hashtags)
 - Normalisation
 
-### 3. Feature Engineering
-- **TF-IDF** : Vectorisation du texte (unigrams + bigrams)
-- **Features textuelles** : Longueur, nombre de hashtags, mentions, emojis
-- **Features utilisateur** : statuses_count, source, location
-- **Features linguistiques** : Sentiment, complexité
+### 3. Feature Engineering 🔧
+- **TF-IDF Avancé** : Vectorisation avec trigrammes (1,2,3), 100K features
+- **Features textuelles extraites** :
+  - Longueur du texte, nombre de mots
+  - Comptage : hashtags, mentions, URLs, emojis
+  - Style : ratio majuscules, ponctuation (!, ?)
+  - Nombres mentionnés
+- **Features utilisateur** : 194 features numériques natives du dataset
+- **Agrégation statistique** : mean, std, max, sum par utilisateur
+- **Normalisation** : StandardScaler pour features numériques
 
-### 4. Modélisation
-- **Baseline** : Dummy Classifier (most_frequent)
-- **Logistic Regression** : Avec TF-IDF
-- **Modèles avancés** : 
-  - Random Forest
-  - XGBoost / LightGBM
-  - Neural Networks
-  - Transformers (CamemBERT pour le français)
+### 4. Modélisation 🤖
+#### Modèles Classiques Optimisés
+- **Logistic Regression** : TF-IDF trigrammes + features numériques, GridSearch sur C
+- **SVM** : LinearSVC avec class_weight='balanced'
+- **Random Forest** : 200 estimateurs avec features combinées
+- **LightGBM** : 500 estimateurs, learning_rate=0.05
+
+#### Transformers
+- **CamemBERT** : Fine-tuning optimisé pour Mac M4
+  - Mode échantillon (15%) pour tests rapides
+  - Mode complet pour production
+  - Batch size adapté à la mémoire unifiée
+
+#### Ensembles ⭐
+- **Vote Majoritaire** : Consensus de 4 modèles classiques
+- **Moyenne de Probabilités** : Combinaison pondérée
+- **Recommandé pour soumission finale**
 
 ### 5. Évaluation
 - **Métrique principale** : Accuracy
@@ -154,54 +177,187 @@ ID,Prediction
 9,0
 ```
 
-## 📊 Résultats
+## 📊 Résultats et Performances
 
-| Modèle | Accuracy (CV) | Accuracy (Kaggle) | Notes |
-|--------|--------------|-------------------|-------|
-| Dummy (Most Frequent) | ~50% | - | Baseline |
-| Logistic Regression | ~XX% | - | TF-IDF + French stopwords |
-| - | - | - | À compléter |
+### Modèles Implémentés
+
+| Modèle | Accuracy (CV) | Features | Notes |
+|--------|--------------|----------|-------|
+| Logistic Regression | ~XX% | TF-IDF trigrammes + 194 numériques | GridSearch optimisé |
+| SVM | ~XX% | TF-IDF trigrammes | Class balanced |
+| Random Forest | ~XX% | TF-IDF + numériques | 200 estimateurs |
+| LightGBM | ~XX% | TF-IDF + numériques | 500 estimateurs |
+| **Ensemble Vote** ⭐ | ~XX% | Tous classiques | Recommandé |
+| **Ensemble Mean** ⭐ | ~XX% | Tous classiques | Recommandé |
+| CamemBERT | ~XX% | Transformers FR | Fine-tuned |
+
+> **Note**: Exécutez `04_advanced_models.ipynb` pour obtenir les scores exacts
+
+### Fichiers de Soumission Générés
+
+Les soumissions sont créées avec **agrégation par utilisateur** (essentiel pour Kaggle) :
+
+1. `ensemble_mean_submission.csv` ⭐⭐⭐ (Priorité 1)
+2. `ensemble_vote_submission.csv` ⭐⭐⭐ (Priorité 1)
+3. `logistic_regression_advanced_submission.csv` ⭐⭐
+4. `svm_advanced_submission.csv` ⭐⭐
+5. `random_forest_advanced_submission.csv` ⭐⭐
+6. `lightgbm_advanced_submission.csv` ⭐⭐
+7. `camembert_submission.csv` ⭐⭐ (si entraîné en mode complet)
 
 ## 🛠️ Utilisation
 
-### Notebook d'exploration
+### 🚀 Méthode Rapide (Recommandée)
+
 ```bash
-jupyter notebook notebooks/01_EDA.ipynb
+# 1. Ouvrir le notebook principal
+jupyter notebook notebooks/04_advanced_models.ipynb
+
+# 2. Exécuter toutes les cellules (menu Cell > Run All)
+#    Temps estimé: 15-30 min sur Mac M4
+
+# 3. Les soumissions sont générées automatiquement dans submissions/
 ```
 
-### Entraîner un modèle baseline
-```bash
-jupyter notebook notebooks/02_baseline.ipynb
-```
+### 📖 Guide Détaillé
 
-### Utiliser les modules Python
+Consultez le guide complet : [`notebooks/ADVANCED_MODELS_GUIDE.md`](notebooks/ADVANCED_MODELS_GUIDE.md)
+
+### ⚡ Mode Échantillon (Test Rapide)
+
+Pour tester le pipeline rapidement (~10 min) :
+
 ```python
-from src.data_loader import load_training_data, load_test_data
-from src.preprocessing import extract_full_text
-from src.models import train_logistic_regression
-
-# Charger les données
-X_train, y_train = load_training_data('data/train.jsonl')
-X_test = load_test_data('data/kaggle_test.jsonl')
-
-# Entraîner un modèle
-model = train_logistic_regression(X_train, y_train)
-
-# Faire des prédictions
-predictions = model.predict(X_test)
+# Dans la cellule CamemBERT du notebook
+USE_SAMPLE = True   # Mode test avec 15% des données
+SAMPLE_SIZE = 0.15
 ```
 
-## 📝 TODO / Améliorations Futures
+### 🔥 Mode Production (Soumission Finale)
 
-- [ ] Analyse approfondie des features textuelles
-- [ ] Feature engineering avancé (sentiment analysis, NER)
-- [ ] Hyperparameter tuning avec GridSearchCV/RandomizedSearchCV
-- [ ] Ensembling de modèles
-- [ ] Utilisation de modèles de langage pré-entraînés (CamemBERT)
-- [ ] Analyse des erreurs de classification
-- [ ] A/B testing de différentes stratégies de preprocessing
+Pour les meilleurs résultats (~30-40 min) :
 
-## 👥 Auteur
+```python
+# Dans la cellule CamemBERT du notebook
+USE_SAMPLE = False  # Utilise toutes les données
+```
+
+### 🐍 Script Python (Alternative)
+
+```bash
+# Générer toutes les soumissions
+python generate_submissions.py --models all
+
+# Générer uniquement les ensembles
+python generate_submissions.py --models ensemble
+
+# Générer uniquement CamemBERT
+python generate_submissions.py --models camembert
+```
+
+## 📝 Améliorations Implémentées ✅
+
+- ✅ **Feature Engineering Avancé**
+  - Extraction de features textuelles (hashtags, mentions, emojis, majuscules)
+  - Utilisation des 194 features numériques natives
+  - Agrégation statistique par utilisateur (mean, std, max, sum)
+  - Normalisation StandardScaler
+
+- ✅ **TF-IDF Optimisé**
+  - Trigrammes (1,2,3) pour capturer plus de contexte
+  - 100K features max au lieu de 1K
+  - min_df pour filtrer mots rares
+  - Sublinear TF scaling
+
+- ✅ **Modèles Classiques Renforcés**
+  - Logistic Regression avec GridSearch sur C
+  - SVM avec class_weight='balanced'
+  - Random Forest et LightGBM avec features combinées
+
+- ✅ **Transformers pour le Français**
+  - CamemBERT fine-tuned
+  - Optimisé pour Mac M4 (MPS backend)
+  - Mode échantillon pour tests rapides
+
+- ✅ **Ensembles de Modèles**
+  - Vote majoritaire
+  - Moyenne de probabilités
+  - Combine tous les modèles classiques
+
+- ✅ **Agrégation par Utilisateur**
+  - Essentielle pour la métrique Kaggle
+  - Moyenne des probas par challenge_id
+  - Vote majoritaire des tweets d'un même utilisateur
+
+- ✅ **Optimisations Mac M4**
+  - Utilisation du GPU Apple Silicon (MPS)
+  - Parallélisation multi-core (10 cœurs)
+  - Batch size optimisé pour mémoire unifiée
+
+### 🎯 Prochaines Améliorations Possibles
+
+- [ ] Data augmentation (back-translation)
+- [ ] Stacking avec meta-modèle
+- [ ] XLM-RoBERTa pour comparaison
+- [ ] RandomizedSearchCV pour LightGBM
+- [ ] Analyse approfondie des erreurs
+- [ ] Features sociales (graphe d'influence)
+- [ ] Pseudo-labeling du test set
+
+## 💻 Optimisé pour Mac M4
+
+Ce projet tire parti des capacités exceptionnelles du **Mac M4** :
+
+### Spécifications M4 Max
+- 🧠 **Neural Engine** 16-core
+- 🎮 **GPU** jusqu'à 40-core
+- 💾 **Memory bandwidth** jusqu'à 546 GB/s
+- ⚡ **Architecture unifiée** (pas de transfert CPU↔GPU)
+
+### Optimisations Appliquées
+```python
+torch.set_num_threads(10)              # Utiliser les 10 cœurs
+device = torch.device("mps")           # GPU Apple Silicon
+per_device_train_batch_size=32         # Gros batch possible
+dataloader_num_workers=4               # Parallélisme I/O
+```
+
+### Temps d'Exécution Estimés
+- Modèles classiques (tous) : **5-15 min**
+- CamemBERT échantillon (15%) : **5-10 min**
+- CamemBERT complet : **20-40 min** (3 epochs)
+- **Total pipeline complet : ~30-45 min**
+
+## 📚 Références Scientifiques
+
+Les implémentations sont basées sur des recherches récentes :
+
+1. **TF-IDF + LogReg** : Papier 2024 montrant 90% accuracy sur tweets
+2. **SVM Trigrammes** : Études comparatives sur classification de texte
+3. **CamemBERT** : Modèle RoBERTa français battant mBERT et XLM-R
+4. **Class Balancing** : Pratique standard pour datasets déséquilibrés
+5. **Ensemble Methods** : Approche classique des top Kagglers
+
+Voir [`notebooks/ADVANCED_MODELS_GUIDE.md`](notebooks/ADVANCED_MODELS_GUIDE.md) pour les références complètes.
+
+## � Documentation Complète
+
+### 🚀 Pour Démarrer
+- **[QUICKSTART.md](QUICKSTART.md)** - Guide de démarrage rapide (5 min)
+- **[notebooks/04_advanced_models.ipynb](notebooks/04_advanced_models.ipynb)** - Notebook principal à exécuter
+
+### 📖 Documentation Technique
+- **[docs/](docs/)** - Documentation détaillée
+  - [IMPROVEMENTS_SUMMARY.md](docs/IMPROVEMENTS_SUMMARY.md) - Résumé de toutes les améliorations
+  - [PIPELINE_VISUAL.md](docs/PIPELINE_VISUAL.md) - Visualisation du pipeline ML
+- **[notebooks/ADVANCED_MODELS_GUIDE.md](notebooks/ADVANCED_MODELS_GUIDE.md)** - Guide complet des modèles (200+ lignes)
+
+### 🔧 Autres Documents
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Guide de contribution
+- [CHANGELOG.md](CHANGELOG.md) - Historique des changements
+- [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Structure détaillée du projet
+
+## �👥 Auteur
 
 [Votre Nom]
 

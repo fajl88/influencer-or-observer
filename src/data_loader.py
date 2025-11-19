@@ -112,15 +112,15 @@ def get_dataset_info(df: pd.DataFrame) -> dict:
     return info
 
 
-def save_submission(predictions: pd.Series, 
-                   challenge_ids: pd.Series, 
+def save_submission(challenge_ids: pd.Series,
+                   predictions: pd.Series, 
                    output_path: str = 'submissions/submission.csv') -> None:
     """
     Crée un fichier de soumission Kaggle au format requis
     
     Args:
-        predictions: Prédictions (0 ou 1)
-        challenge_ids: IDs des challenges
+        challenge_ids: IDs des challenges (colonne ID)
+        predictions: Prédictions (0 ou 1) (colonne Prediction)
         output_path: Chemin de sortie du fichier CSV
     """
     logger.info(f"Création du fichier de soumission: {output_path}")

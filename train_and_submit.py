@@ -55,8 +55,21 @@ def main():
         'lowercase': config['preprocessing']['lowercase'],
     }
     
+    # Prétraiter les données
+    initial_train_size = len(X_train)
     X_train = preprocess_dataframe(X_train, clean_params=clean_params)
     X_test = preprocess_dataframe(X_test, clean_params=clean_params)
+    
+    # Filtrer y_train pour correspondre aux indices de X_train après preprocessing
+    # (des lignes peuvent avoir été supprimées si le texte était trop court)
+    if len(X_train) != initial_train_size:
+        print(f"⚠️ {initial_train_size - len(X_train)} tweets supprimés (trop courts)")
+        y_train = y_train.loc[X_train.index]
+        print(f"✓ y_train ajusté: {len(y_train)} échantillons")
+    
+    print(f"✓ Données après preprocessing:")
+    print(f"  - Train: {len(X_train)} échantillons")
+    print(f"  - Test: {len(X_test)} échantillons")
     
     # ============================================================================
     # 4. FEATURE ENGINEERING (Optionnel)
