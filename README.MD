@@ -31,3 +31,46 @@ Short project notebook pipeline for classifying Twitter posts as "influencer" vs
 - Embedding extraction: `preprocessing.ipynb` includes code to compute CamemBERT embeddings. The notebook has a clear warning comment: do not execute the embedding cells unless you need to (they are slow and require significant memory/time). Use a GPU when possible.
 - Single-layer vs Multi-layer embeddings: `model.ipynb` contains a `USE_MULTILAYER` flag. When `False` it uses single-layer (layer 12) 768-dim embeddings (total features ~ 776). When `True` it uses the concatenation of layers 6, 9 and 12 (3×768 = 2304 dims) giving ~2312 total features.
 - If using the notebooks interactively, inspect and set `DATA_DIR` and file paths at the top of the notebooks if your environment differs.
+
+---
+
+## Améliorations basées sur les Labs
+
+Le notebook `Data/baseline.ipynb` a été enrichi avec des techniques inspirées des Labs du cours:
+
+### Techniques implémentées
+
+| Lab | Technique | Implémentation |
+|-----|-----------|----------------|
+| **Lab4** | Text Processing & Regularization | TF-IDF optimisé (trigrams, sublinear_tf), régularisation via C |
+| **Lab5** | Transfer Learning | CamemBERT fine-tuning (voir `finetune_camembert.ipynb`) |
+| **Lab6** | Feature Engineering | Features structurées (hashtags, mentions, longueur, emojis) |
+| **Lab8** | Hyperparameter Optimization | GridSearchCV pour optimiser les paramètres |
+
+### Modèles disponibles dans `baseline.ipynb`
+
+1. **Baseline TF-IDF + Logistic Regression** - Original
+2. **Improved TF-IDF + LR** - Plus de features, meilleurs hyperparamètres
+3. **GridSearchCV** - Recherche automatique des meilleurs paramètres
+4. **LightGBM + TF-IDF** - Gradient boosting puissant
+5. **Combined Features + LightGBM** - Text + features structurées
+6. **Ensemble Voting** - Combinaison de plusieurs modèles
+
+### Fichiers de soumission générés
+
+- `submission_lgbm.csv` - LightGBM (recommandé)
+- `submission_combined.csv` - Features combinées
+- `submission_ensemble.csv` - Ensemble voting
+- `logistic_regression.csv` - Baseline LR
+- `dummy.csv` - Classe majoritaire (référence)
+
+### Approches avancées (autres notebooks)
+
+- **`finetune_camembert.ipynb`**: Fine-tuning end-to-end de CamemBERT pour classification binaire
+- **`hierarchical.ipynb`**: Approche hiérarchique agrégeant les tweets par utilisateur
+
+### Recommandations pour gagner le Kaggle
+
+1. **Quick wins**: Exécuter `baseline.ipynb` avec LightGBM ou Ensemble
+2. **Meilleure accuracy**: Utiliser `finetune_camembert.ipynb` (nécessite GPU)
+3. **Innovation**: Combiner les prédictions de plusieurs approches (stacking)
