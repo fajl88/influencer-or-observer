@@ -17,7 +17,7 @@
 ### Notebooks Existants
 | Notebook | Description | Status |
 |----------|-------------|--------|
-| `Data/baseline.ipynb` | TF-IDF + LR + LightGBM + Ensemble | ✅ Amélioré |
+| `data/baseline.ipynb` | TF-IDF + LR + LightGBM + Ensemble | ✅ Amélioré |
 | `finetune_camembert.ipynb` | Fine-tuning CamemBERT end-to-end | ✅ Prêt |
 | `hierarchical.ipynb` | Approche hiérarchique par utilisateur | 🔄 À compléter |
 | `preprocessing.ipynb` | Extraction embeddings CamemBERT | ✅ Prêt |
@@ -376,7 +376,7 @@ final_predictions = (test_probs[:, 1] >= optimal_thresh).astype(int)
 
 ---
 
-### PHASE 7: Data Augmentation (2-3 heures) 📈
+### PHASE 7: data Augmentation (2-3 heures) 📈
 
 > **Nouveau notebook**: `data_augmentation.ipynb`
 
@@ -423,7 +423,7 @@ def augment_minority_class(df, text_col, label_col, minority_label, n_aug=2):
             new_row[text_col] = aug_text
             augmented.append(new_row)
     
-    return pd.concat([df, pd.DataFrame(augmented)])
+    return pd.concat([df, pd.dataFrame(augmented)])
 ```
 
 ---

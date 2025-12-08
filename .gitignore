@@ -3,9 +3,9 @@
 /embeddings
 /camembert-finetuned
 
-# Exclude Labs and Data folders from GitHub
+# Exclude Labs and data folders from GitHub
 Labs/
-Data/
+data/
 
 # Python
 __pycache__/
@@ -37,4 +37,4 @@ venv/
 # Large data files
 *.csv
 *.jsonl
-*.parquet
+*.parquetkaggle-env/

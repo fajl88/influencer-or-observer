@@ -36,7 +36,7 @@ Short project notebook pipeline for classifying Twitter posts as "influencer" vs
 
 ## Améliorations basées sur les Labs
 
-Le notebook `Data/baseline.ipynb` a été enrichi avec des techniques inspirées des Labs du cours:
+Le notebook `data/baseline.ipynb` a été enrichi avec des techniques inspirées des Labs du cours:
 
 ### Techniques implémentées
 
