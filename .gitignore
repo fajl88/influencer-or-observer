@@ -26,6 +26,7 @@ __pycache__/
 .env
 .venv/
 venv/
+kaggle-env/
 
 # Model files
 *.pt
@@ -37,4 +38,4 @@ venv/
 # Large data files
 *.csv
 *.jsonl
-*.parquetkaggle-env/
+*.parquet
