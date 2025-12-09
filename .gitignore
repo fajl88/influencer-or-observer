@@ -4,7 +4,7 @@
 /camembert-finetuned
 
 # Exclude Labs and data folders from GitHub
-Labs/
+labs/
 data/
 
 # Python

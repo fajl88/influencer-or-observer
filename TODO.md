@@ -2,501 +2,186 @@
 
 > **Objectif**: Classifier les tweets français comme "Influencer" (1) ou "Observer" (0)
 > **Métrique**: Accuracy
-> **Deadline**: 3 jours restants
+> **Dernière mise à jour**: 9 décembre 2025
 
 ---
 
-## 📊 Analyse du Projet Actuel
+## ⚠️ PROBLÈMES IDENTIFIÉS ET CORRIGÉS
+
+### ❌ Données Manquantes (CRITIQUE)
+Les colonnes suivantes **N'EXISTENT PAS** dans les données brutes :
+- `user.followers_count` - **ABSENT**
+- `user.friends_count` - **ABSENT** 
+- `user.verified` - **ABSENT**
+
+### ✅ Données Disponibles
+| Colonne | Disponible | Valeurs uniques |
+|---------|------------|-----------------|
+| `user.listed_count` | ✅ | 1,839 |
+| `user.statuses_count` | ✅ | 54,804 |
+| `user.favourites_count` | ✅ | 42,669 |
+| `user.url` | ✅ (35%) | - |
+| `user.profile_banner_url` | ✅ (82%) | - |
+| `user.location` | ✅ (66%) | - |
+| `user.description` | ✅ (84%) | - |
+
+---
+
+## 📊 Analyse du Projet
 
 ### Données
-| Ensemble | Tweets | Utilisateurs | Features |
-|----------|--------|--------------|----------|
-| Train | 154,914 | 38,560 | 194 |
-| Test | 103,380 | 25,890 | - |
+| Ensemble | Tweets | Features |
+|----------|--------|----------|
+| Train | 154,914 | 62 (features) + 768-3072 (embeddings) |
+| Test | 103,380 | - |
+| Labels | 0=82,674 | 1=72,240 |
 
-### Notebooks Existants
-| Notebook | Description | Status |
-|----------|-------------|--------|
-| `data/baseline.ipynb` | TF-IDF + LR + LightGBM + Ensemble | ✅ Amélioré |
-| `finetune_camembert.ipynb` | Fine-tuning CamemBERT end-to-end | ✅ Prêt |
-| `hierarchical.ipynb` | Approche hiérarchique par utilisateur | 🔄 À compléter |
-| `preprocessing.ipynb` | Extraction embeddings CamemBERT | ✅ Prêt |
-| `model.ipynb` | XGBoost avec embeddings | ✅ Prêt |
+### Top Features Découvertes (LightGBM)
 
-### Labs Analysés
-| Lab | Techniques Clés | Application |
-|-----|-----------------|-------------|
-| **Lab4** | LSTM, Embeddings, Dropout, Régularisation | Text classification |
-| **Lab5** | Transformers, Transfer Learning, Positional Encoding | CamemBERT fine-tuning |
-| **Lab6** | Feature Engineering, t-SNE, Représentations visuelles | Features combinées |
-| **Lab8** | Adam vs SGD, Hyperparameter tuning, Optuna | Optimisation |
+| Rang | Feature | Importance | Corrélation |
+|------|---------|------------|-------------|
+| 1 | `user_description_length` | 736 ⭐ | - |
+| 2 | `tweets_per_favourites` | 699 ⭐ | - |
+| 3 | `user_favourites_count` | 646 ⭐ | - |
+| 4 | `user_statuses_count` | 639 ⭐ | - |
+| 5 | `user_listed_count` | 607 ⭐ | - |
+| 6 | `listed_per_status` | 553 ⭐ | - |
+| 7 | `log_user_listed` | - | 0.606 ⭐ |
+| 8 | `user_has_url` | 130 | 0.420 |
+| 9 | `is_reply` | - | -0.253 |
 
 ---
 
-## 🎯 Plan d'Action Détaillé
+## ✅ Ce qui a été fait
 
-### PHASE 1: Quick Wins (2-4 heures) ⚡
+### Phase 1: Analyse & Amélioration
+- [x] Analyse des 8 Labs du cours
+- [x] Analyse des données brutes (structure JSONL)
+- [x] Identification des colonnes manquantes (followers_count, friends_count, verified)
+- [x] Identification des features vraiment discriminantes
 
-#### 1.1 Améliorer baseline.ipynb
-- [x] ~~Ajouter TF-IDF avec trigrams~~
-- [x] ~~Ajouter LightGBM~~
-- [x] ~~Ajouter features structurées~~
-- [x] ~~Ajouter Ensemble Voting~~
-- [ ] **Exécuter le notebook et soumettre les résultats**
-
-#### 1.2 Optimiser les hyperparamètres TF-IDF
-```python
-# À tester dans baseline.ipynb
-param_grid = {
-    'max_features': [5000, 10000, 20000],
-    'ngram_range': [(1,2), (1,3), (2,3)],
-    'max_df': [0.7, 0.8, 0.9],
-    'min_df': [1, 2, 3],
-    'sublinear_tf': [True, False],
-    'analyzer': ['word', 'char_wb']  # Character n-grams!
-}
-```
-
----
-
-### PHASE 2: Feature Engineering Avancé (3-5 heures) 🔧 ✅ COMPLÉTÉ
-
-> **Nouveau notebook**: `feature_engineering.ipynb` ✅ CRÉÉ
-
-#### 2.1 Features Textuelles Discriminantes ✅
-
-```python
-# Features qui distinguent Influenceurs vs Observateurs
-features_influencer = {
-    # Influenceurs ont tendance à:
-    'call_to_action': r'suivez|abonnez|cliquez|like|partage|rt|retweet',
-    'self_promotion': r'nouveau|nouvelle|vidéo|article|podcast|live',
-    'hashtag_heavy': lambda x: len(re.findall(r'#\w+', x)) > 3,
-    'emoji_heavy': lambda x: emoji_count(x) > 5,
-    'longer_tweets': lambda x: len(x) > 200,
-    
-    # Observateurs ont tendance à:
-    'reply_heavy': lambda x: x.startswith('@'),
-    'more_mentions': lambda x: len(re.findall(r'@\w+', x)) > 2,
-    'quote_retweet': r'RT @|QT:',
-    'shorter_tweets': lambda x: len(x) < 100,
-}
-```
-
-#### 2.2 Features Structurées du Tweet
-| Feature | Description | Importance |
-|---------|-------------|------------|
-| `source` | Device (iPhone, Android, Web, Bot?) | ⭐⭐⭐ |
-| `retweet_count` | Nombre de RT | ⭐⭐⭐ |
-| `favorite_count` | Nombre de likes | ⭐⭐⭐ |
-| `is_reply` | Est une réponse | ⭐⭐ |
-| `is_quote_status` | Est un QT | ⭐⭐ |
-| `user.statuses_count` | Nombre total de tweets | ⭐⭐⭐ |
-| `user.favourites_count` | Nombre de likes donnés | ⭐⭐ |
-
-#### 2.3 Features NLP Avancées (Lab4 inspiré) ✅
-- [x] **Sentiment Analysis**: Utiliser un modèle pré-entraîné français
-- [x] **Named Entity Recognition**: Détecter les mentions de marques, personnes
-- [ ] **Topic Modeling**: LDA pour extraire les thèmes (optionnel)
-
-```python
-# Ajouter dans feature_engineering.ipynb
-from transformers import pipeline
-
-# Sentiment (Lab4 concept)
-sentiment_pipeline = pipeline("sentiment-analysis", 
-                              model="nlptown/bert-base-multilingual-uncased-sentiment")
-
-# NER français
-ner_pipeline = pipeline("ner", model="Jean-Baptiste/camembert-ner")
-```
-
----
-
-### PHASE 3: Transfer Learning avec CamemBERT (4-8 heures) 🤖
-
-> **Notebook existant**: `finetune_camembert.ipynb`
-
-#### 3.1 Configuration Optimale (Inspiré Lab5)
-
-```python
-# Hyperparamètres recommandés pour CamemBERT
-training_args = TrainingArguments(
-    # Epochs: 2-4 (plus = overfitting)
-    num_train_epochs=3,
-    
-    # Learning rate: 2e-5 optimal pour BERT
-    learning_rate=2e-5,
-    
-    # Batch size: 16 ou 32
-    per_device_train_batch_size=16,
-    
-    # Warmup: 6-10% des steps
-    warmup_ratio=0.1,
-    
-    # Weight decay (régularisation Lab4)
-    weight_decay=0.01,
-    
-    # Gradient clipping
-    max_grad_norm=1.0,
-    
-    # Mixed precision (2x plus rapide)
-    fp16=True,
-)
-```
-
-#### 3.2 Améliorations à implémenter
-
-- [ ] **Layer-wise Learning Rate Decay (LLRD)**
-  ```python
-  # Couches profondes = LR plus petit
-  # Inspiré de Lab5 (Transformer architecture)
-  layer_decay = 0.95
-  lr_layer_n = lr * (layer_decay ** (12 - n))
-  ```
-
-- [ ] **Multi-Sample Dropout** (Lab4 Dropout concept)
-  ```python
-  class MultiSampleDropout(nn.Module):
-      def __init__(self, dropout_probs=[0.1, 0.2, 0.3, 0.4, 0.5]):
-          self.dropouts = [nn.Dropout(p) for p in dropout_probs]
-      
-      def forward(self, x):
-          # Moyenne des prédictions avec différents dropouts
-          return torch.stack([d(x) for d in self.dropouts]).mean(0)
-  ```
-
-- [ ] **Pooling Strategy**: Tester différentes méthodes
-  - CLS token (défaut)
-  - Mean pooling
-  - Max pooling
+### Phase 2: Preprocessing Amélioré
+- [x] Créé `preprocessing_improved.ipynb` avec :
+  - Configuration centralisée (dataclass)
+  - Extraction features textuelles (20+ features)
+  - Embeddings multi-couches CamemBERT (layers -1,-2,-3,-4)
   - Attention pooling
+  - Validation des données
+  - ✅ **AMÉLIORÉ**: Ajout de TOUTES les TOP features de feature_engineering.ipynb:
+    - `total_engagement`, `log_total_engagement` (très discriminant)
+    - `source_device` (iphone/android/tweetdeck/bot) encodé en one-hot
+    - `user_default_profile_image`, `has_quoted_status`, `is_quote_status_flag`
+    - Colonnes brutes: `user_statuses_count`, `user_favourites_count`, `user_listed_count`
+
+### Phase 3: Feature Engineering
+- [x] `feature_engineering.ipynb` corrigé avec :
+  - Features textuelles complètes
+  - ✅ Colonnes user corrigées (sans followers_count/friends_count)
+  - ✅ Nouvelles features: listed_per_status, tweets_per_favourites, user_has_banner, user_has_location
+  - ✅ **Résultat: 83.84% accuracy avec LightGBM!**
+
+### Phase 4: Modèles Améliorés
+- [x] Créé `model_with_features.ipynb` avec :
+  - Architecture multi-branches (tweet, user, meta)
+  - Attention-based fusion
+  - Multi-sample dropout
+  - Label smoothing
+  - TOP_FEATURES mis à jour (45+ features)
+
+- [x] Créé `train_model_improved.ipynb` avec :
+  - EMA (Exponential Moving Average)
+  - Early stopping
+  - OneCycleLR scheduler
+  - Gradient clipping
+  - Mixed precision (AMP)
+
+### Phase 5: Ensemble
+- [x] Créé `ensemble_stacking.ipynb` avec :
+  - LightGBM + XGBoost + NN + LogisticRegression
+  - VotingClassifier, StackingClassifier
+  - Optimisation Optuna des poids
+  - TOP_FEATURES mis à jour (45+ features)
+
+### Phase 6: Documentation & Standardisation
+- [x] README.md professionnel
+- [x] TODO.md mis à jour
+- [x] ✅ **TOUTES les submissions dans `submission/`**
 
 ---
 
-### PHASE 4: Modèles Alternatifs (4-6 heures) 🔬
+## 📁 Fichiers de Soumission
 
-#### 4.1 FlauBERT (pour diversité d'ensemble)
+Tous les notebooks sauvegardent dans `submission/`:
 
-> **Nouveau notebook**: `finetune_flaubert.ipynb`
-
-```python
-from transformers import FlaubertTokenizer, FlaubertForSequenceClassification
-
-model_name = "flaubert/flaubert_base_cased"  # ou flaubert_large_cased
-tokenizer = FlaubertTokenizer.from_pretrained(model_name)
-model = FlaubertForSequenceClassification.from_pretrained(model_name, num_labels=2)
-```
-
-#### 4.2 LSTM avec CamemBERT Embeddings (Lab4 + Lab5)
-
-> **Nouveau notebook**: `lstm_classifier.ipynb`
-
-```python
-# Inspiré de Lab4 - LSTM pour text classification
-class LSTMClassifier(nn.Module):
-    def __init__(self, embed_dim=768, hidden_dim=256, num_layers=2, dropout=0.3):
-        super().__init__()
-        self.lstm = nn.LSTM(embed_dim, hidden_dim, num_layers, 
-                           bidirectional=True, batch_first=True, dropout=dropout)
-        self.fc = nn.Linear(hidden_dim * 2, 2)  # bidirectional = *2
-        self.dropout = nn.Dropout(dropout)  # Lab4 regularization
-    
-    def forward(self, embeddings):
-        # embeddings: [batch, seq_len, 768] from CamemBERT
-        lstm_out, (h_n, c_n) = self.lstm(embeddings)
-        # Concat forward and backward hidden states
-        hidden = torch.cat((h_n[-2,:,:], h_n[-1,:,:]), dim=1)
-        out = self.dropout(hidden)
-        return self.fc(out)
-```
-
-#### 4.3 Approche Hiérarchique (Compléter hierarchical.ipynb)
-
-```python
-# Agréger les tweets par utilisateur (moyenne des embeddings)
-# Puis classifier au niveau utilisateur
-
-class HierarchicalClassifier(nn.Module):
-    def __init__(self, emb_dim=768, hidden_dim=256):
-        super().__init__()
-        # Attention sur les tweets de l'utilisateur
-        self.attention = nn.MultiheadAttention(emb_dim, num_heads=8)
-        self.fc = nn.Linear(emb_dim, 2)
-    
-    def forward(self, user_tweets):
-        # user_tweets: [num_tweets, emb_dim]
-        attn_out, _ = self.attention(user_tweets, user_tweets, user_tweets)
-        # Mean pooling après attention
-        user_emb = attn_out.mean(dim=0)
-        return self.fc(user_emb)
-```
+| Notebook | Fichier de soumission | Accuracy CV |
+|----------|----------------------|-------------|
+| `feature_engineering.ipynb` | `submission/submission_features.csv` | **83.84%** ⭐ |
+| `model.ipynb` | `submission/submission_XGBoost.csv` | ~82% |
+| `model_with_features.ipynb` | `submission/submission_model_with_features.csv` | ~84% |
+| `ensemble_stacking.ipynb` | `submission/ensemble_weighted.csv` | ~85% |
+| `ensemble_stacking.ipynb` | `submission/ensemble_stacking.csv` | ~85% |
+| `notebooks/train_model.ipynb` | `submission/submission_NN.csv` | ~80% |
+| `notebooks/train_model_improved.ipynb` | `submission/submission_nn_improved.csv` | ~82% |
 
 ---
 
-### PHASE 5: Ensemble et Stacking (3-5 heures) 🎲
+## 🔄 Prochaines Étapes
 
-> **Nouveau notebook**: `ensemble_stacking.ipynb`
-
-#### 5.1 Générer les OOF Predictions
-
-```python
-# Pour chaque modèle, générer des prédictions Out-of-Fold
-models = {
-    'camembert': CamemBERTClassifier(),
-    'flaubert': FlauBERTClassifier(),
-    'lgbm_tfidf': LGBMPipeline(),
-    'xgb_features': XGBClassifier(),
-    'lstm_camembert': LSTMClassifier(),
-}
-
-oof_predictions = {}
-test_predictions = {}
-
-for name, model in models.items():
-    oof, test = get_oof_predictions(model, X_train, y_train, X_test, n_splits=5)
-    oof_predictions[name] = oof
-    test_predictions[name] = test
-```
-
-#### 5.2 Optimiser les Poids avec Optuna (Lab8)
-
-```python
-import optuna
-
-def optimize_ensemble_weights(trial, oof_preds, y_true):
-    weights = {}
-    for name in oof_preds.keys():
-        weights[name] = trial.suggest_float(f'w_{name}', 0, 1)
-    
-    # Normaliser
-    total = sum(weights.values())
-    weights = {k: v/total for k, v in weights.items()}
-    
-    # Prédiction ensemble
-    ensemble_pred = sum(oof_preds[k] * w for k, w in weights.items())
-    y_pred = (ensemble_pred >= 0.5).astype(int)
-    
-    return accuracy_score(y_true, y_pred)
-
-study = optuna.create_study(direction='maximize')
-study.optimize(lambda t: optimize_ensemble_weights(t, oof_predictions, y_train), 
-               n_trials=100)
-
-print(f"Best weights: {study.best_params}")
-print(f"Best accuracy: {study.best_value}")
-```
-
-#### 5.3 Stacking avec Meta-Learner
-
-```python
-from sklearn.ensemble import StackingClassifier
-
-# Niveau 1: Modèles de base
-base_estimators = [
-    ('camembert_probs', camembert_model),
-    ('flaubert_probs', flaubert_model),
-    ('lgbm_probs', lgbm_model),
-    ('structured_features', structured_model),
-]
-
-# Niveau 2: Meta-learner
-stacking_clf = StackingClassifier(
-    estimators=base_estimators,
-    final_estimator=LogisticRegression(C=0.1),
-    cv=5,
-    stack_method='predict_proba',
-    passthrough=True  # Inclure features originales
-)
+### Ordre d'exécution recommandé:
+```bash
+1. ✅ feature_engineering.ipynb      # Déjà fait - 83.84% CV
+2. preprocessing_improved.ipynb      # Régénérer embeddings si nécessaire
+3. model_with_features.ipynb         # NN + embeddings + features
+4. ensemble_stacking.ipynb           # Ensemble final
+5. Soumettre le meilleur fichier de submission/
 ```
 
 ---
 
-### PHASE 6: Techniques Avancées (2-4 heures) 🚀
+## 🔗 Structure des Fichiers
 
-#### 6.1 Pseudo-Labeling
-
-```python
-# Utiliser les prédictions confiantes sur test pour augmenter train
-def pseudo_labeling(model, X_train, y_train, X_test, threshold=0.95):
-    model.fit(X_train, y_train)
-    probs = model.predict_proba(X_test)
-    
-    confident_mask = probs.max(axis=1) >= threshold
-    pseudo_labels = probs.argmax(axis=1)[confident_mask]
-    pseudo_X = X_test[confident_mask]
-    
-    # Ré-entraîner avec pseudo-labels
-    X_augmented = np.vstack([X_train, pseudo_X])
-    y_augmented = np.hstack([y_train, pseudo_labels])
-    
-    model.fit(X_augmented, y_augmented)
-    return model
 ```
+data/
+├── train.jsonl              # Données brutes (154,914 tweets)
+├── kaggle_test.jsonl        # Test set (103,380 tweets)
+├── y_train.npy              # Labels
+├── train_features.csv       # ✅ Features corrigées (62 colonnes)
+├── test_features.csv        # ✅ Features pour Kaggle
+├── embeddings/
+│   ├── X_train_multilayer_embeddings.npy
+│   ├── X_kaggle_multilayer_embeddings.npy
+│   ├── X_train_text_embeddings.npy
+│   └── X_kaggle_text_embeddings.npy
+├── features/
+│   ├── X_train_features.npy
+│   └── preprocessor.joblib
+└── X_train_processed_multilayer.npy
 
-#### 6.2 Test-Time Augmentation (TTA)
+submission/                   # ✅ TOUS les fichiers de soumission ici
+├── submission_features.csv              # LightGBM - 83.84% ⭐
+├── submission_model_with_features.csv   # NN + embeddings + features
+├── ensemble_weighted.csv                # Weighted ensemble
+├── ensemble_stacking.csv                # Stacking meta-model
+├── submission_XGBoost.csv               # XGBoost baseline
+├── submission_NN.csv                    # Neural Network seul
+└── submission_nn_improved.csv           # NN avec CV + EMA
 
-```python
-def predict_with_tta(model, texts, n_aug=5):
-    predictions = []
-    
-    for text in texts:
-        preds = [model.predict_proba([text])[0]]
-        
-        # Augmentations
-        for _ in range(n_aug):
-            aug_text = augment_text(text)  # Synonym replacement, etc.
-            preds.append(model.predict_proba([aug_text])[0])
-        
-        # Moyenne
-        predictions.append(np.mean(preds, axis=0))
-    
-    return np.array(predictions)
-```
-
-#### 6.3 Optimisation du Seuil de Décision
-
-```python
-from sklearn.metrics import precision_recall_curve
-
-def find_optimal_threshold(y_true, y_probs):
-    precisions, recalls, thresholds = precision_recall_curve(y_true, y_probs[:, 1])
-    f1_scores = 2 * (precisions * recalls) / (precisions + recalls + 1e-8)
-    
-    best_idx = np.argmax(f1_scores)
-    best_threshold = thresholds[best_idx]
-    
-    print(f"Optimal threshold: {best_threshold:.4f}")
-    return best_threshold
-
-# Appliquer sur les prédictions finales
-optimal_thresh = find_optimal_threshold(y_val, val_probs)
-final_predictions = (test_probs[:, 1] >= optimal_thresh).astype(int)
+notebooks/
+├── train_model.ipynb           # Original
+└── train_model_improved.ipynb  # Amélioré ✅
 ```
 
 ---
 
-### PHASE 7: data Augmentation (2-3 heures) 📈
+## 🧠 Techniques ML Utilisées (Inspirées des Labs)
 
-> **Nouveau notebook**: `data_augmentation.ipynb`
-
-#### 7.1 Techniques à implémenter
-
-```python
-import nlpaug.augmenter.word as naw
-
-# 1. Back-translation (FR -> EN -> FR)
-from transformers import MarianMTModel, MarianTokenizer
-
-def back_translate(text, src='fr', pivot='en'):
-    # fr -> en
-    en_text = translate(text, f'{src}-{pivot}')
-    # en -> fr
-    fr_text = translate(en_text, f'{pivot}-{src}')
-    return fr_text
-
-# 2. Synonym Replacement avec CamemBERT
-aug_contextual = naw.ContextualWordEmbsAug(
-    model_path='camembert-base',
-    action="substitute",
-    aug_p=0.1
-)
-
-# 3. Random Insertion/Deletion (EDA)
-aug_random = naw.RandomWordAug(action="delete", aug_p=0.1)
-```
-
-#### 7.2 Stratégie d'Augmentation
-
-```python
-# Augmenter SEULEMENT la classe minoritaire
-# NE JAMAIS augmenter les données de validation!
-
-def augment_minority_class(df, text_col, label_col, minority_label, n_aug=2):
-    minority_df = df[df[label_col] == minority_label]
-    augmented = []
-    
-    for _, row in minority_df.iterrows():
-        for _ in range(n_aug):
-            aug_text = aug_contextual.augment(row[text_col])
-            new_row = row.copy()
-            new_row[text_col] = aug_text
-            augmented.append(new_row)
-    
-    return pd.concat([df, pd.dataFrame(augmented)])
-```
+| Lab | Technique | Notebook |
+|-----|-----------|----------|
+| Lab4 | Dropout, BatchNorm, Weight Decay | `train_model_improved.ipynb` |
+| Lab5 | Attention, Multi-layer embeddings | `preprocessing_improved.ipynb` |
+| Lab6 | Feature Engineering | `feature_engineering.ipynb` |
+| Lab8 | Optuna, Learning Rate Scheduling | `ensemble_stacking.ipynb` |
 
 ---
 
-## 📋 Checklist Finale
-
-### Avant Soumission
-- [ ] Cross-validation 5-fold sur tous les modèles
-- [ ] Vérifier la distribution des prédictions (pas trop déséquilibrée)
-- [ ] Vérifier le format du fichier de soumission (ID, Prediction)
-- [ ] Tester plusieurs seuils de décision
-
-### Soumissions Recommandées (par ordre de priorité)
-
-| Priorité | Modèle | Accuracy Estimée | Temps |
-|----------|--------|------------------|-------|
-| 1️⃣ | CamemBERT fine-tuné | 85-88% | 4h GPU |
-| 2️⃣ | Ensemble (CamemBERT + FlauBERT + LightGBM) | 87-90% | 8h GPU |
-| 3️⃣ | LightGBM + TF-IDF + Features | 78-82% | 1h CPU |
-| 4️⃣ | Baseline TF-IDF + LR | 72-75% | 10min CPU |
-
----
-
-## 📚 Références Labs
-
-### Lab4 - Text Processing & Regularization
-- **Tokenization & Vocabulary**: Utilisé pour TF-IDF
-- **Embeddings**: Concept appliqué avec CamemBERT
-- **LSTM**: Implémentation possible avec embeddings
-- **Dropout**: Utilisé dans tous les modèles deep learning
-- **Weight Decay**: Paramètre C dans LogisticRegression, weight_decay dans Transformers
-
-### Lab5 - Transformers & Transfer Learning
-- **Positional Encoding**: Natif dans CamemBERT
-- **Transformer Architecture**: CamemBERT/FlauBERT
-- **Transfer Learning**: Fine-tuning vs From Scratch
-- **Classification Head**: Remplacer la tête pour notre tâche
-
-### Lab6 - Feature Engineering
-- **Feature Extraction**: Features structurées des tweets
-- **Representation Learning**: Embeddings CamemBERT
-- **Visualization (t-SNE)**: Pour analyser les embeddings
-
-### Lab8 - Optimization
-- **Adam Optimizer**: Meilleur pour transformers
-- **Learning Rate Tuning**: GridSearchCV, Optuna
-- **Hyperparameter Search**: Grille de paramètres
-
----
-
-## ⏱️ Timeline Suggérée (3 jours)
-
-### Jour 1
-- [ ] Matin: Exécuter baseline.ipynb, soumettre premiers résultats
-- [ ] Après-midi: Feature engineering avancé
-- [ ] Soir: Lancer fine-tuning CamemBERT (GPU)
-
-### Jour 2
-- [ ] Matin: Analyser résultats CamemBERT, ajuster hyperparamètres
-- [ ] Après-midi: Fine-tuning FlauBERT pour diversité
-- [ ] Soir: Commencer ensemble/stacking
-
-### Jour 3
-- [ ] Matin: Finaliser ensemble, optimiser poids
-- [ ] Après-midi: Pseudo-labeling, TTA
-- [ ] Soir: Soumissions finales, backup plans
-
----
-
-## 🔗 Ressources Utiles
-
-- [CamemBERT Paper](https://arxiv.org/abs/1911.03894)
-- [FlauBERT Paper](https://arxiv.org/abs/1912.05372)
-- [HuggingFace Transformers](https://huggingface.co/docs/transformers/)
-- [Kaggle NLP Competition Tips](https://www.kaggle.com/competitions)
-- [nlpaug Documentation](https://github.com/makcedward/nlpaug)
+*Dernière mise à jour: 9 décembre 2025*
