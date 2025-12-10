@@ -69,6 +69,9 @@ influencer-or-observer/
 │   ├── ensemble_stacking.ipynb        # Ensemble & stacking
 │   └── model.ipynb                    # XGBoost baseline
 │
+├── 🚀 NOTEBOOKS AVANCÉS
+│   └── notebooks/transformer_ultimate_v2.ipynb  # Twitter XLM-R large + TF‑IDF + XGB + stacking calibré
+│
 ├── 📁 notebooks/
 │   ├── train_model.ipynb              # Training NN original
 │   └── train_model_improved.ipynb     # Training NN amélioré (CV, EMA)
@@ -129,6 +132,16 @@ influencer-or-observer/
     • Optimisation Optuna des poids
     ↓
 6️⃣ Soumission Kaggle 🏆
+```
+
+### Option C : Pipeline leaderboard (plus robuste CV/LB)
+```
+1️⃣ notebooks/transformer_ultimate_v2.ipynb
+    • Twitter XLM-R large (multi-seed) avec label smoothing + LLRD
+    • TF‑IDF char/word + Logistic Regression (forte généralisation)
+    • XGBoost sur features engineered
+    • Stacking calibré pour réduire l'écart CV/LB
+2️⃣ Soumettre `submission_meta_v2.csv` ou `submission_tf_v2_thrXX.csv`
 ```
 
 ---

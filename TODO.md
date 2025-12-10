@@ -122,6 +122,7 @@ Tous les notebooks sauvegardent dans `submission/`:
 | `ensemble_stacking.ipynb` | `submission/ensemble_stacking.csv` | ~85% |
 | `notebooks/train_model.ipynb` | `submission/submission_NN.csv` | ~80% |
 | `notebooks/train_model_improved.ipynb` | `submission/submission_nn_improved.csv` | ~82% |
+| `notebooks/transformer_ultimate_v2.ipynb` | `submission_meta_v2.csv` | viser 0.88-0.89 LB |
 
 ---
 
@@ -133,7 +134,8 @@ Tous les notebooks sauvegardent dans `submission/`:
 2. preprocessing_improved.ipynb      # Régénérer embeddings si nécessaire
 3. model_with_features.ipynb         # NN + embeddings + features
 4. ensemble_stacking.ipynb           # Ensemble final
-5. Soumettre le meilleur fichier de submission/
+5. notebooks/transformer_ultimate_v2.ipynb  # Stack robuste TF-IDF + XGB + XLM-R large
+6. Soumettre le meilleur fichier de submission/
 ```
 
 ---
