@@ -131,13 +131,18 @@ Seuil typique : **0.50-0.58**
 
 ## 5. Résultats
 
-| Méthode | CV Accuracy | Configuration |
-|---------|-------------|---------------|
-| LightGBM (features only) | ~83.8% | Baseline |
-| TF-IDF + LogReg | ~82.5% | Généralise bien |
-| Transformer (single seed) | ~85.0% | twitter-xlm-roberta |
-| Multi-seed TF + XGB Stack | ~86-87% | Calibré |
-| + Pseudo-labeling | ~87-88% | Meilleur CV |
+### 5.1 Comparaison avec les Baselines Fournies
+
+| Méthode | Accuracy | Source |
+|---------|----------|--------|
+| Dummy Classifier (classe majoritaire) | ~53% | Baseline fournie |
+| Logistic Regression (TF-IDF texte seul) | ~63% | Baseline fournie |
+| **Nos modèles** | | |
+| LightGBM (features engineered) | ~83.8% | +20.8% vs baseline |
+| TF-IDF enrichi + LogReg | ~82.5% | +19.5% vs baseline |
+| Transformer (single seed) | ~85.0% | +22% vs baseline |
+| Multi-seed TF + XGB Stack | ~86-87% | +23-24% vs baseline |
+| + Pseudo-labeling | ~87-88% | **+24-25% vs baseline** |
 
 **Soumissions générées :**
 1. `submission_meta_v2.csv` (stack calibré)
@@ -148,14 +153,29 @@ Seuil typique : **0.50-0.58**
 
 ## 6. Analyse et Discussion
 
-### Ce qui fonctionne
+### 6.1 Choix Méthodologiques et Justifications
+
+Nous avons exploré plusieurs approches recommandées et fait des choix éclairés :
+
+| Méthode | Décision | Justification |
+|---------|----------|---------------|
+| **Transformers (HuggingFace)** | ✅ Utilisé | Twitter-XLM-RoBERTa pré-entraîné sur 198M tweets, idéal pour notre tâche |
+| **Gensim/FastText** | ❌ Non utilisé | Les embeddings statiques sont surpassés par les embeddings contextuels des transformers [1] |
+| **SentenceTransformers** | ❌ Non utilisé | Le fine-tuning d'un modèle spécialisé Twitter offre de meilleures performances que des embeddings génériques |
+| **NetworkX/PyG (GNN)** | ❌ Non utilisé | Les données ne contiennent pas le graphe social complet (followers/following absents). Seules les @mentions sont disponibles, insuffisantes pour construire un graphe représentatif |
+| **NLTK/SpaCy** | ⚠️ Minimal | Le preprocessing cardiffnlp [1] est optimisé pour les transformers Twitter et surpasse la lemmatization classique |
+
+**Pourquoi pas de Graph Neural Networks ?**  
+Bien que les GNN soient prometteurs pour modéliser les réseaux sociaux, notre dataset ne fournit que les tweets individuels sans le graphe de connexions. Les colonnes `followers_count` et `friends_count` sont absentes, rendant impossible la reconstruction du réseau social. Une approche par graphe de @mentions serait très sparse et bruitée.
+
+### 6.2 Ce qui fonctionne
 
 - **Preprocessing cardiffnlp** : Essentiel pour twitter-xlm-roberta
 - **Features utilisateur** : `listed_count` compense l'absence de `followers_count`
 - **TF-IDF char n-grams** : Capture les patterns de style (emojis, ponctuation)
 - **Calibration isotonique** : Réduit l'écart CV/LB
 
-### Limites
+### 6.3 Limites
 
 - **Manque de features réseau** : Sans followers/friends, la classification repose principalement sur le contenu
 - **Pseudo-labeling** : Risque d'overfitting si seuils mal choisis
