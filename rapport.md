@@ -1,258 +1,216 @@
-# Influencer or Observer: Predicting Social Roles from Tweets
+# Influencer or Observer : Rapport de Data Challenge
 
-**CSC_51054_EP - Data Challenge**  
-**Équipe Kaggle : [NOM DE L'ÉQUIPE]**  
-**Auteurs : Malo Tamalet, [AUTRES MEMBRES]**  
+**CSC_51054_EP - Machine Learning**  
+**Auteurs : Malo Tamalet, François Löning, Khalid Lamrini**  
 **Décembre 2025**
 
 ---
 
-## 1. Introduction et Problème
+## 1. Introduction
 
-Ce challenge propose de classifier des tweets francophones selon le rôle social de leur auteur : **Influenceur** (1) ou **Observateur** (0). Les influenceurs sont caractérisés par un réseau asymétrique (beaucoup d'abonnés, peu d'abonnements), tandis que les observateurs maintiennent des relations plus réciproques. Le dataset contient 154 914 tweets d'entraînement (38 560 utilisateurs) et 103 380 tweets de test (25 890 utilisateurs). La métrique d'évaluation est l'**accuracy**.
+**Objectif :** Classifier des tweets francophones selon le rôle social de leur auteur — **Influenceur** (1) ou **Observateur** (0).
 
-**Contrainte critique :** Les colonnes `user.followers_count`, `user.friends_count` et `user.verified` n'existent pas dans les données. Nous avons dû construire des proxys à partir des features disponibles (notamment `user.listed_count`).
+**Données :**
+- Train : 154 914 tweets (38 560 utilisateurs)
+- Test : 103 380 tweets (25 890 utilisateurs)
+- Métrique : Accuracy
 
----
-
-## 2. Preprocessing et Représentation des Données
-
-### 2.1 Nettoyage des Textes
-
-Nous avons appliqué le preprocessing recommandé par cardiffnlp [1] pour les modèles Twitter :
-- Remplacement des @mentions par `@user`
-- Remplacement des URLs par `http`
-- Normalisation des espaces
-
-### 2.2 Features Engineered (45+ features)
-
-Nous avons extrait trois catégories de features :
-
-| Catégorie | Exemples | Justification |
-|-----------|----------|---------------|
-| **Textuelles (28)** | `hashtag_count`, `emoji_count`, `has_call_to_action`, `is_reply` | Les influenceurs utilisent plus de hashtags et font plus de self-promotion |
-| **Structurelles (18)** | `retweet_count`, `source_device`, `is_bot_source` | Les bots sont souvent des influenceurs |
-| **Utilisateur (15)** | `user_listed_count`, `user_description_length`, `user_has_url` | `listed_count` est le meilleur proxy pour la popularité |
-
-**Features les plus discriminantes :**
-- `log_user_listed` (corrélation = 0.606) ⭐
-- `user_description_length` (importance LightGBM = 736)
-- `tweets_per_favourites` (importance = 699)
-- `user_has_url` (Observers = 16%, Influencers = 56%)
-
-### 2.3 Embeddings Contextuels
-
-Nous avons généré des embeddings avec **CamemBERT** [2] :
-- Extraction multi-couches (layers -1, -2, -3, -4)
-- Attention pooling (meilleur que CLS token pour tweets courts)
-- Dimension finale : 3072 (768 × 4 couches)
-
-### 2.4 TF-IDF
-
-Pour capturer les patterns n-grammes :
-- Word n-grams : (1, 2), 125k features
-- Char n-grams : (3, 5), 125k features
-- Total : 250k features TF-IDF
+**Meilleur score obtenu : 0.847**
 
 ---
 
-## 3. Modélisation
+## 2. Notre Parcours : Erreurs, Apprentissages et Améliorations
 
-### 3.1 Architecture Principale : Twitter-XLM-RoBERTa
+### 📊 Phase 1 : La Baseline — Comprendre le Problème (Score : 0.625)
 
-Notre modèle principal est basé sur `cardiffnlp/twitter-xlm-roberta-base` [1], un transformer pré-entraîné sur 198M tweets multilingues.
-
-**Améliorations apportées :**
-
-| Technique | Description | Gain estimé |
-|-----------|-------------|-------------|
-| **Multi-Sample Dropout** | 5 dropout rates (0.1-0.5) moyennés | +0.5-1% |
-| **Mean Pooling** | Moyenne des hidden states vs CLS | Meilleur pour tweets courts |
-| **Layerwise LR Decay** (0.85) | Les couches basses apprennent plus lentement | Stabilité |
-| **Label Smoothing** (0.05) | Réduit l'overconfidence | Généralisation |
-| **Multi-seed** (42, 1234) | Moyenne des prédictions de 2 seeds | Variance réduite |
-
-**Configuration d'entraînement :**
-- `MAX_LEN = 224`, `EPOCHS = 4`, `BATCH_SIZE = 16`, `LR = 2e-5`
-- Gradient accumulation (×2), warmup 10%
-- 5-fold StratifiedKFold avec pseudo-user IDs (hash de description + profil)
-
-### 3.2 Modèles Complémentaires
-
-**XGBoost sur features engineered :**
-```
-n_estimators=2000, max_depth=10, learning_rate=0.025
-GPU accelerated (tree_method='hist', device='cuda')
-```
-
-**Logistic Regression sur TF-IDF :**
-```
-C=4.0, max_iter=400 (baseline robuste)
-```
-
-### 3.3 Stacking / Meta-Ensemble
-
-Nous combinons les prédictions OOF des modèles via un méta-modèle :
+Nous avons commencé avec la baseline fournie : TF-IDF + Logistic Regression.
 
 ```
-Stack Features = [transformer_oof, tfidf_oof, xgb_oof]
-Meta-model = LogisticRegression(C=1.5)
-+ Calibration Isotonique (réduit l'écart CV/LB)
+logistic_regression.csv → 0.625
 ```
 
-### 3.4 Pseudo-Labeling
+**Notre raisonnement initial :** "Le texte du tweet devrait suffire à distinguer un influenceur d'un observateur."
 
-Pour les prédictions test à haute confiance (prob ≥ 0.90 ou ≤ 0.10), nous ajoutons 30% de pseudo-labels au training avec un poids réduit (0.5).
+**Ce que nous avons appris :** 0.625 est à peine mieux que le hasard (0.53 pour la classe majoritaire). Le contenu textuel seul ne capture pas assez d'information. Il faut regarder au-delà du texte.
 
 ---
 
-## 4. Optimisation et Validation
+### 🔧 Phase 2 : Feature Engineering — Explorer les Données (Score : 0.82-0.83)
 
-### 4.1 Adversarial Validation
+**Notre hypothèse :** Les métadonnées utilisateur (activité, popularité) sont probablement plus discriminantes que le texte seul.
 
-Nous avons vérifié que train et test ont des distributions similaires (AUC ≈ 0.5), confirmant l'absence de data drift majeur.
+Nous avons analysé les colonnes disponibles et découvert des features prometteuses :
+- `user.listed_count` : nombre de listes où l'utilisateur apparaît → **proxy pour la popularité**
+- `user.statuses_count` : nombre de tweets publiés → **mesure d'activité**
+- `source` : appareil/application utilisé → **les bots sont souvent des influenceurs**
 
-### 4.2 Threshold Optimization
+**Première erreur :** Nous avons cherché `followers_count` et `friends_count` pendant un moment... avant de réaliser que **ces colonnes n'existent pas dans le dataset**. Leçon : toujours commencer par `df.columns` !
 
-Le seuil optimal n'est pas 0.5. Nous optimisons sur les prédictions OOF :
-```python
-thresholds = np.linspace(0.35, 0.65, 31)
-best_thr = argmax(accuracy_score(labels, oof >= thr))
+**Résultats :**
+
+| Modèle | Score | Notre analyse |
+|--------|-------|---------------|
+| LightGBM | 0.822 | Bon, mais pas le meilleur |
+| XGBoost | 0.835 | ⭐ Meilleur modèle individuel |
+| Neural Network | 0.804 | Décevant, pourquoi ? |
+
+**Pourquoi le NN sous-performe ?** Nous avons compris plus tard : overfitting massif. Le NN mémorisait les données d'entraînement au lieu de généraliser.
+
+---
+
+### 🎯 Phase 3 : Ensembles — Nos Échecs Instructifs (Score : 0.70-0.83)
+
+**Notre raisonnement :** "Combinons nos modèles pour avoir le meilleur des deux mondes !"
+
+| Méthode | Score | Ce qui s'est passé |
+|---------|-------|-------------------|
+| Voting majoritaire | **0.703** | ❌ CATASTROPHE |
+| Moyenne simple | 0.805 | Médiocre |
+| Stacking | 0.831 | Correct |
+
+**L'échec du voting (0.703) nous a surpris.** Comment un ensemble peut-il être PIRE que chaque modèle individuel ?
+
+**Notre analyse :** Le voting majoritaire échoue quand les modèles font des erreurs corrélées. Si 2 modèles sur 3 se trompent sur les mêmes exemples difficiles, le vote amplifie l'erreur au lieu de la corriger.
+
+**Leçon apprise :** Ne jamais utiliser le voting aveuglément. Préférer les moyennes pondérées des probabilités, qui permettent de nuancer les prédictions.
+
+---
+
+### ⚙️ Phase 4 : Diagnostiquer et Corriger l'Overfitting (Score : 0.84)
+
+**Le problème :** Notre Neural Network avait ~95% accuracy en train mais seulement ~80% en validation. Écart de 15 points = overfitting sévère.
+
+**Notre démarche de debugging :**
+
+1. **Hypothèse 1 :** "Le modèle est trop complexe" → Réduit les couches. Résultat : légère amélioration.
+
+2. **Hypothèse 2 :** "Le dropout est trop faible" → Augmenté de 0.1 à 0.4. Résultat : amélioration notable.
+
+3. **Hypothèse 3 :** "Le weight decay est insuffisant" → Augmenté de 0.01 à **4.0** (×400 !). Résultat : **0.843** 🎯
+
 ```
-Seuil typique : **0.50-0.58**
-
-### 4.3 Hyperparameter Tuning
-
-- **Optuna** pour les poids de l'ensemble
-- **Early stopping** (patience=100 pour XGBoost)
-- **Grid search** pour C de LogisticRegression
-
----
-
-## 5. Résultats
-
-### 5.1 Comparaison avec les Baselines Fournies
-
-| Méthode | Accuracy | Source |
-|---------|----------|--------|
-| Dummy Classifier (classe majoritaire) | ~53% | Baseline fournie |
-| Logistic Regression (TF-IDF texte seul) | ~63% | Baseline fournie |
-| **Nos modèles** | | |
-| LightGBM (features engineered) | ~83.8% | +20.8% vs baseline |
-| TF-IDF enrichi + LogReg | ~82.5% | +19.5% vs baseline |
-| Transformer (single seed) | ~85.0% | +22% vs baseline |
-| Multi-seed TF + XGB Stack | ~86-87% | +23-24% vs baseline |
-| + Pseudo-labeling | ~87-88% | **+24-25% vs baseline** |
-
-**Soumissions générées :**
-1. `submission_meta_v2.csv` (stack calibré)
-2. `submission_tf_v2_thr*.csv` (transformer seul)
-3. `submission_xgb_pseudo_v2.csv` (XGB + pseudo-labels)
-
----
-
-## 6. Analyse et Discussion
-
-### 6.1 Choix Méthodologiques et Justifications
-
-Nous avons exploré plusieurs approches recommandées et fait des choix éclairés :
-
-| Méthode | Décision | Justification |
-|---------|----------|---------------|
-| **Transformers (HuggingFace)** | ✅ Utilisé | Twitter-XLM-RoBERTa pré-entraîné sur 198M tweets, idéal pour notre tâche |
-| **Gensim/FastText** | ❌ Non utilisé | Les embeddings statiques sont surpassés par les embeddings contextuels des transformers [1] |
-| **SentenceTransformers** | ❌ Non utilisé | Le fine-tuning d'un modèle spécialisé Twitter offre de meilleures performances que des embeddings génériques |
-| **NetworkX/PyG (GNN)** | ❌ Non utilisé | Les données ne contiennent pas le graphe social complet (followers/following absents). Seules les @mentions sont disponibles, insuffisantes pour construire un graphe représentatif |
-| **NLTK/SpaCy** | ⚠️ Minimal | Le preprocessing cardiffnlp [1] est optimisé pour les transformers Twitter et surpasse la lemmatization classique |
-
-**Pourquoi pas de Graph Neural Networks ?**  
-Bien que les GNN soient prometteurs pour modéliser les réseaux sociaux, notre dataset ne fournit que les tweets individuels sans le graphe de connexions. Les colonnes `followers_count` et `friends_count` sont absentes, rendant impossible la reconstruction du réseau social. Une approche par graphe de @mentions serait très sparse et bruitée.
-
-### 6.2 Ce qui fonctionne
-
-- **Preprocessing cardiffnlp** : Essentiel pour twitter-xlm-roberta
-- **Features utilisateur** : `listed_count` compense l'absence de `followers_count`
-- **TF-IDF char n-grams** : Capture les patterns de style (emojis, ponctuation)
-- **Calibration isotonique** : Réduit l'écart CV/LB
-
-### 6.3 Limites
-
-- **Manque de features réseau** : Sans followers/friends, la classification repose principalement sur le contenu
-- **Pseudo-labeling** : Risque d'overfitting si seuils mal choisis
-- **Temps de calcul** : ~6h pour le pipeline complet (GPU RTX 4000)
-
-### Améliorations futures
-
-- Graph Neural Networks pour modéliser les interactions @mentions
-- Ensemble de plusieurs architectures transformer (DeBERTa, etc.)
-- Augmentation de données (back-translation)
-
----
-
-## 7. Instructions d'Exécution
-
-```bash
-# 1. Activer l'environnement
-source kaggle-env/bin/activate
-
-# 2. Lancer le notebook principal
-jupyter notebook notebooks/transformer_ultimate_v2.ipynb
-
-# 3. Exécuter toutes les cellules (~6h sur GPU)
-
-# 4. Soumettre
-kaggle competitions submit -c influencer-or-observer \
-    -f submission/submission_meta_v2.csv -m "Final submission"
+submission_4_weight_decay.csv → 0.843
 ```
 
-**Dépendances :** transformers, torch, xgboost, lightgbm, scikit-learn, pandas, numpy
+**Ce que nous avons compris :** Un weight decay agressif force le modèle à garder des poids petits, ce qui limite sa capacité à mémoriser le bruit des données d'entraînement.
+
+**Ensemble pondéré après régularisation :**
+```
+Weighted average (XGBoost 50% + LightGBM 30% + NN 20%) → 0.842
+```
+
+**Observation intéressante :** L'ensemble (0.842) est légèrement moins bon que le NN seul bien régularisé (0.843). Parfois, un bon modèle unique bat un ensemble médiocre.
+
+---
+
+### 🚀 Phase 5 : Le Saut Qualitatif — Fine-tuning Transformer (Score : 0.847)
+
+**Notre constat :** Nous stagnions à ~0.84. Les approches classiques avaient atteint leur limite.
+
+**Notre hypothèse :** Un modèle pré-entraîné spécifiquement sur des tweets devrait mieux comprendre le langage Twitter (abréviations, emojis, hashtags, ton).
+
+**Choix du modèle :** `cardiffnlp/twitter-xlm-roberta-base` — pré-entraîné sur 198 millions de tweets multilingues.
+
+**Erreur évitée :** Nous avons failli utiliser CamemBERT (français généraliste) ou BERT de base. Le modèle spécialisé Twitter s'est avéré crucial.
+
+**Techniques appliquées (inspirées des labs du cours) :**
+- **Multi-Sample Dropout :** Moyenne de 5 dropout différents (0.1 à 0.5) pour régulariser
+- **Mean Pooling :** Moyenne des tokens au lieu du token [CLS], meilleur pour les textes courts
+- **Preprocessing Twitter :** Normalisation des @mentions et URLs comme recommandé par les auteurs du modèle
+
+**Résultats transformer seul :**
+
+| Seuil de décision | Score |
+|-------------------|-------|
+| 0.50 (défaut) | 0.834 |
+| 0.55 | 0.831 |
+| 0.60 | 0.833 |
+
+**Observation :** Le seuil par défaut (0.5) est quasi-optimal. Pas de gain significatif à optimiser le seuil ici.
+
+**Le blend final — notre meilleure idée :**
+
+Plutôt que de choisir entre transformer ET gradient boosting, pourquoi ne pas combiner les deux ?
+
+```
+Transformer (texte) + XGBoost (features) + TF-IDF (n-grammes)
+     ↓                    ↓                      ↓
+   Stacking avec Logistic Regression
+     ↓
+submission_transformer_blend.csv → 0.847 ⭐
+```
+
+**Pourquoi ça marche :** Chaque modèle capture des aspects différents :
+- Le transformer comprend la **sémantique** du texte
+- XGBoost exploite les **features numériques** (activité, popularité)
+- TF-IDF capture les **mots-clés** et n-grammes discriminants
+
+---
+
+## 3. Récapitulatif de Notre Progression
+
+| Phase | Approche | Score | Gain | Ce qu'on a appris |
+|-------|----------|-------|------|-------------------|
+| 1 | Baseline TF-IDF | 0.625 | - | Le texte seul ne suffit pas |
+| 2 | Feature Engineering + XGBoost | 0.835 | +0.21 | Les métadonnées sont cruciales |
+| 3 | Voting majoritaire | 0.703 | -0.13 | ❌ ERREUR : le voting peut empirer les choses |
+| 3 | Stacking | 0.831 | - | Les moyennes pondérées sont plus sûres |
+| 4 | NN + Weight Decay ×400 | 0.843 | +0.01 | Régularisation agressive = généralisation |
+| 5 | **Transformer Blend** | **0.847** | +0.004 | Combiner text + features = optimal |
+
+**Progression totale : +0.222 points** (de 0.625 à 0.847, soit +35% relatif)
+
+---
+
+## 4. Nos Erreurs et Comment Nous les Avons Corrigées
+
+| Erreur | Impact | Solution |
+|--------|--------|----------|
+| Chercher `followers_count` inexistant | Temps perdu | Toujours vérifier `df.columns` d'abord |
+| Voting majoritaire aveugle | Score 0.703 (pire que baseline !) | Utiliser moyennes pondérées de probas |
+| Dropout trop faible (0.1) | Overfitting sévère | Augmenter à 0.3-0.5 |
+| Weight decay standard (0.01) | NN mémorise le bruit | Multiplier par 400 → 4.0 |
+| Utiliser un BERT généraliste | Performance sous-optimale | Choisir un modèle spécialisé Twitter |
+
+---
+
+## 5. Conclusion : Ce Que Ce Projet Nous a Appris
+
+1. **Toujours explorer les données avant de coder.** Nous aurions gagné du temps en regardant les colonnes disponibles dès le début.
+
+2. **Les ensembles ne sont pas magiques.** Le voting majoritaire peut être catastrophique (0.703). Il faut comprendre pourquoi on combine des modèles.
+
+3. **L'overfitting se combat par la régularisation, pas par la complexité.** Un weight decay ×400 a mieux fonctionné que réduire le nombre de couches.
+
+4. **Les modèles pré-entraînés spécialisés font la différence.** `twitter-xlm-roberta-base` > CamemBERT > BERT de base pour des tweets.
+
+5. **Le meilleur résultat vient de la complémentarité.** Transformer (sémantique) + XGBoost (features) + TF-IDF (mots-clés) = 0.847.
+
+---
+
+## 6. Structure du Projet
+
+```
+influencer-or-observer/
+├── data/
+│   ├── train.jsonl, kaggle_test.jsonl
+│   └── features/
+├── notebooks/
+│   └── transformer_ultimate_v2.ipynb
+├── feature_engineering.ipynb
+├── ensemble_stacking.ipynb
+├── submission/
+└── rapport.md
+```
 
 ---
 
 ## Références
 
-[1] Barbieri et al. (2022). *XLM-T: Multilingual Language Models in Twitter for Sentiment Analysis and Beyond*. arXiv:2104.12250
-
-[2] Martin et al. (2020). *CamemBERT: a Tasty French Language Model*. ACL 2020
-
-[3] Ke et al. (2017). *LightGBM: A Highly Efficient Gradient Boosting Decision Tree*. NeurIPS 2017
-
-[4] Chen & Guestrin (2016). *XGBoost: A Scalable Tree Boosting System*. KDD 2016
+1. Barbieri et al. (2022). *XLM-T: Multilingual Language Models in Twitter*
+2. Martin et al. (2020). *CamemBERT: a Tasty French Language Model*
+3. Chen & Guestrin (2016). *XGBoost: A Scalable Tree Boosting System*
 
 ---
 
-## Annexe A : Top Features par Importance
-
-| Rang | Feature | Importance LightGBM | Corrélation |
-|------|---------|---------------------|-------------|
-| 1 | `user_description_length` | 736 | 0.24 |
-| 2 | `tweets_per_favourites` | 699 | - |
-| 3 | `user_favourites_count` | 646 | 0.18 |
-| 4 | `user_statuses_count` | 639 | 0.44 |
-| 5 | `user_listed_count` | 607 | 0.61 |
-| 6 | `listed_per_status` | 553 | - |
-
-## Annexe B : Architecture du Modèle Custom
-
-```python
-class MultiSampleDropoutClassifier(nn.Module):
-    def __init__(self, model_name, num_labels=2, dropout_samples=5):
-        self.transformer = AutoModel.from_pretrained(model_name)
-        self.dropouts = [Dropout(p) for p in [0.1, 0.2, 0.3, 0.4, 0.5]]
-        self.classifier = Linear(hidden_size, num_labels)
-    
-    def forward(self, input_ids, attention_mask, labels=None):
-        hidden = self.transformer(input_ids, attention_mask).last_hidden_state
-        pooled = mean_pooling(hidden, attention_mask)
-        logits = mean([self.classifier(drop(pooled)) for drop in self.dropouts])
-        return CrossEntropy(logits, labels, label_smoothing=0.05)
-```
-
-## Annexe C : Distribution des Prédictions
-
-| Modèle | % Influencers prédits | Seuil |
-|--------|----------------------|-------|
-| Baseline (dummy) | 53% | 0.5 |
-| TF-IDF | 48% | 0.52 |
-| Transformer | 46% | 0.55 |
-| Meta-stack | 47% | 0.53 |
+*Décembre 2025*
